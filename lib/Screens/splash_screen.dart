@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:loading_indicator/loading_indicator.dart';
 import 'package:organ_donation_app/users/loginPage.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -40,8 +41,18 @@ class _SplashScreenState extends State<SplashScreen> {
               style: TextStyle(color: Colors.grey),
               ),
               const SizedBox(
-                height: 10,
+                height: 30,
               ),
+
+              const SizedBox(
+                width: 90,
+                height: 90,
+                child: LoadingIndicator(
+                  indicatorType: Indicator.lineScalePulseOutRapid, /// Required, The loading type of the widget
+                  colors: [Colors.white],
+                  strokeWidth: 0.001,
+                ),
+              )
               
             ],
         ),
