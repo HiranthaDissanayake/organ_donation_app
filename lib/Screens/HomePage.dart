@@ -95,14 +95,14 @@ class _HomePageState extends State<HomePage> {
         ),
          const Padding(
           padding: EdgeInsets.only(left: 30,right: 30),
-          child: Text("We're here to bridge the gap between those in need and compassionate donors. Health Care app is designed to streamline the organ donation process, connecting hospitals directly with available donors swiftly and efficiently. Save precious time and lives with our easy-to-use platform. Let's work together to build a healthier Sri Lanka.",style: TextStyle(fontSize: 20,)),
+          child: Text("We're here to bridge the gap between those in need and compassionate donors. Health Care app is designed to streamline the organ donation process, connecting hospitals directly with available donors swiftly and efficiently. Save precious time and lives with our easy-to-use platform. Let's work together to build a healthier Sri Lanka.",style: TextStyle(fontSize: 16,)),
         ),
         Padding(
           padding: const EdgeInsets.only(top: 10),
           child: Image.asset("assets/Images/logo.png",width: 120,),
         ),
         Padding(
-          padding: const EdgeInsets.only(bottom: 20,top: 40),
+          padding: const EdgeInsets.only(bottom: 20,top: 20),
           child: SizedBox(
             width: 200,
             height: 50,

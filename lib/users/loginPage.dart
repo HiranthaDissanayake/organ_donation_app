@@ -1,15 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:organ_donation_app/Database/database_connection.dart';
 import 'package:organ_donation_app/Screens/HomePage.dart';
-import 'package:organ_donation_app/users/model/user.dart';
-import 'package:organ_donation_app/users/model/userPrefereces/user_preferences.dart';
+import 'package:organ_donation_app/Services/auth.dart';
 import 'package:organ_donation_app/users/registerPage.dart';
-import 'package:http/http.dart' as http;
 
 class Loginpage extends StatefulWidget {
   const Loginpage({super.key});
@@ -20,47 +14,16 @@ class Loginpage extends StatefulWidget {
 
 class _LoginpageState extends State<Loginpage> {
 
-var formKey = GlobalKey<FormState>();
-TextEditingController emailController = TextEditingController();
-TextEditingController passwordController = TextEditingController();
+// ref for the AuthServices class
+final AuthServices _auth = AuthServices();
 
-loginUserNow() async{
-  try{
-    var res = await http.post(
-      Uri.parse(Database.login),
-      body: {
-        "user_email": emailController.text.trim(),
-        "user_password": passwordController.text.trim()
-      }
-    );
+// form key
+final _formKey = GlobalKey<FormState>();
 
-  if(res.statusCode==200){
-      var resBodyOfLogin = jsonDecode(res.body);
-      if(resBodyOfLogin['success'] == true){
-        Fluttertoast.showToast(msg: "Logged-in Successfully.");
-
-        User userInfo = User.fromJson(resBodyOfLogin["userData"]);
-
-        // save userInfo to local Storage using shared prefrences
-        await RememberUserPrefs.saveRememberUser(userInfo);
-
-        
-
-        setState(() {
-          passwordController.clear();
-          emailController.clear();
-        });
-
-        Navigator.push(context, MaterialPageRoute(builder: (context)=> const HomePage()));
-      }else{
-        Fluttertoast.showToast(msg: "Incorrect Email or Password, Please Try Again.");
-      }
-    }
-  }catch(e){
-    print("Error :$e");
-  }
-}
-
+// email password states
+String email = "";
+String password = "";
+String error = "";
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +34,7 @@ loginUserNow() async{
           child: Padding(
             padding: const EdgeInsets.only(left: 20,right: 20,top: 100),
             child: Form(
-              key: formKey,
+              key: _formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -87,8 +50,14 @@ loginUserNow() async{
                         padding: EdgeInsets.only(left: 8),
                         child: Text("Your Email",style: TextStyle(color: Colors.grey,fontSize: 20),),
                       ),
-                      TextField(
-                      controller: emailController,
+                      TextFormField(
+                      validator: (val) => 
+                          val?.isEmpty == true ? "Enter a valid email" : null,
+                      onChanged: (val) {
+                        setState(() {
+                          email = val;
+                        });
+                      },
                       decoration:const InputDecoration(
                       border: OutlineInputBorder(),
                       helperText: 'Enter Your Registered Email',
@@ -113,8 +82,15 @@ loginUserNow() async{
                         child: Text("Password",style: TextStyle(color: Colors.grey,fontSize: 20),),
                       ),
                       
-                      TextField(
-                      controller: passwordController,
+                      TextFormField(
+                        obscureText: true,
+                      validator: (val) => 
+                          val!.length < 6 ? "Enter a valid password" : null,
+                          onChanged: (val){
+                            setState(() {
+                              password = val;
+                            });
+                          },
                       decoration:const InputDecoration(
                       border: OutlineInputBorder(),
                       helperText: 'Enter Your Password',
@@ -134,14 +110,26 @@ loginUserNow() async{
                     width: 500,
                     height: 60,
                     child: ElevatedButton(
-                      onPressed: (){
-                        if(formKey.currentState!.validate()){
-                          loginUserNow();
+                      onPressed: () async{
+                        dynamic result = await _auth.signInUsingEmailAndPassword(email, password);
+
+                        if(result==null){
+                          setState(() {
+                            error = "Could not signin with incorrect user credintial";
+                          });
+                        } else{
+                          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomePage(),));
                         }
                       },
                       child: const Text("Login",style: TextStyle(fontSize: 20),),
                     ),
                   ),
+
+                  const SizedBox(
+                    height: 10,
+                  ),
+
+                  Text(error, style: const TextStyle(color: Colors.red),),
                       
                   const SizedBox(
                     height: 20,
@@ -176,4 +164,7 @@ loginUserNow() async{
       ),
     );
   }
+
+
 }
+

@@ -1,11 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:organ_donation_app/Database/database_connection.dart';
+import 'package:organ_donation_app/Services/auth.dart';
 import 'package:organ_donation_app/users/loginPage.dart';
-import 'package:organ_donation_app/users/model/user.dart';
-import 'package:http/http.dart' as http;
 
 
 class RegisterPage extends StatefulWidget {
@@ -17,76 +13,18 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
 
+final AuthServices _auth = AuthServices();
+
+String username = "";
+String email = "";
+String password = "";
+String error = "";
+
 final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 TextEditingController nameController = TextEditingController();
 TextEditingController emailController = TextEditingController();
 TextEditingController passwordController = TextEditingController();
 
-validateUserEmail() async{
-  try{
-    var res = await http.post(
-      Uri.parse(Database.validateEmail),
-      body: {
-        'user_email': emailController.text.trim(),
-      }
-    );
-
-    if(res.statusCode == 200)//from flutter app the connection with api to server - success
-    {
-      var resBodyOfValidateEmail = jsonDecode(res.body);
-
-      if(resBodyOfValidateEmail['emailFound'] == true)
-      {
-        Fluttertoast.showToast(msg: "Email is already in someone else use. Try another email.");
-      }
-      else{
-        //register & save new user record to database
-        registerAndSaveUserRecord();
-      }
-    }
-
-  }catch(e){
-
-  }
-}
-
-registerAndSaveUserRecord() async{
-  User userModel = User(
-    1,
-    nameController.text.trim(),
-    emailController.text.trim(),
-    passwordController.text.trim()
-  );
-
-  try{
-
-    var res = await http.post(
-      Uri.parse(Database.signUp),
-      body: userModel.toJson()
-    );
-
-    if(res.statusCode==200){
-      var resBodyOfSignUp = jsonDecode(res.body);
-      if(resBodyOfSignUp['success'] == true){
-        Fluttertoast.showToast(msg: "Registered Successfully.");
-
-        setState(() {
-          nameController.clear();
-          passwordController.clear();
-          emailController.clear();
-        });
-
-        Navigator.push(context, MaterialPageRoute(builder: (context)=> const Loginpage()));
-      }else{
-        Fluttertoast.showToast(msg: "Error Occured, Try Again.");
-      }
-    }
-
-  }catch(e){
-    print(e.toString());
-    Fluttertoast.showToast(msg: e.toString());
-  }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -109,37 +47,25 @@ registerAndSaveUserRecord() async{
                   child:  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.only(left: 8),
-                        child: Text("User Name",style: TextStyle(color: Colors.grey,fontSize: 20),),
-                      ),
-                      TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      helperText: 'Enter New Username',
-                      helperStyle: TextStyle(color: Colors.grey),
-                      
-                    ),
-                    style: const TextStyle(color: Colors.white),
-                  ), 
-                    ],
-                  ),
-                ),
-        
-                 const SizedBox(
-                  height: 10,
-                ),
-        
-                 Column(
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Column(
+                          children: [
+                             Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Padding(
                       padding: EdgeInsets.only(left: 8),
                       child: Text("Email",style: TextStyle(color: Colors.grey,fontSize: 20),),
                     ),
-                    TextField(
-                    controller: emailController,
+                    TextFormField(
+                    validator: (val) => 
+                          val!.isEmpty ? "Enter a valid email" : null,
+                          onChanged: (val) {
+                            setState(() {
+                              email = val;
+                            });
+                          },
                     decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     helperText: 'Enter Your Email',
@@ -148,8 +74,6 @@ registerAndSaveUserRecord() async{
                   ),
                   style: const TextStyle(color: Colors.white),
                 ), 
-        
-                
                   ],
                 ),
         
@@ -166,8 +90,15 @@ registerAndSaveUserRecord() async{
                       child: Text("Password",style: TextStyle(color: Colors.grey,fontSize: 20),),
                     ),
         
-                    TextField(
-                      controller: passwordController,
+                    TextFormField(
+                      obscureText: true,
+                    validator: (val) => 
+                          val!.length < 6 ? "Password must be at least 6 characters" : null,
+                          onChanged: (val) {
+                            setState(() {
+                              password = val;
+                            });
+                          },
                     decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     helperText: 'Enter New Password',
@@ -178,6 +109,19 @@ registerAndSaveUserRecord() async{
                 ),
                   ],
                 ),
+                          ],
+                        )
+                      ),
+                       
+                    ],
+                  ),
+                ),
+        
+                 const SizedBox(
+                  height: 10,
+                ),
+        
+                
                 
                 const SizedBox(
                   height: 20,
@@ -187,22 +131,31 @@ registerAndSaveUserRecord() async{
                   width: 500,
                   height: 60,
                   child: ElevatedButton(
-                    onPressed: (){
-                      if(formKey.currentState!.validate()){
-                        //validate the email
-                        validateUserEmail();
-                        //john@gmail.com
-                        //john22@gmail.com
-                        
+                    onPressed: () async{
+                      dynamic result = await _auth.registerWithEmailAndPassword(email, password);
+
+                      if(result == null){
+                        // error
+                        setState(() {
+                          error = "Please enter a valid email!";
+                        });
+                      } else {
+                        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const Loginpage(),));
                       }
                     },
-                    child: const Text("Register",style: TextStyle(fontSize: 20),),
+                    child: const Text("Register",style: TextStyle(fontSize: 20),
+                    ),
                   ),
                 ),
         
                 const SizedBox(
                   height: 20,
                 ),
+
+                // error text
+                Text(error, style: const TextStyle(
+                  color: Colors.red
+                ),),
         
                 RichText(text: TextSpan(children: [
                   const TextSpan(
